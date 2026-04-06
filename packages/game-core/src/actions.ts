@@ -36,12 +36,17 @@ export function shuffleWall(state: GameState): GameState {
   const allTiles: Tile[] = [];
 
   for (const def of state.rule.tiles) {
-    for (let i = 0; i < def.count; i++) {
-      allTiles.push({
-        instanceId: `tile-${instanceCounter++}`,
-        definitionId: def.id,
-        faceUp: false,
-      });
+    const variantEntries = Object.entries(def.variants ?? {});
+    const variantTotal = variantEntries.reduce((sum, [, n]) => sum + n, 0);
+    const normalCount = def.count - variantTotal;
+
+    for (let i = 0; i < normalCount; i++) {
+      allTiles.push({ instanceId: `tile-${instanceCounter++}`, definitionId: def.id, faceUp: false });
+    }
+    for (const [variant, n] of variantEntries) {
+      for (let i = 0; i < n; i++) {
+        allTiles.push({ instanceId: `tile-${instanceCounter++}`, definitionId: def.id, faceUp: false, variant });
+      }
     }
   }
 

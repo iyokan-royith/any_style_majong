@@ -21,13 +21,19 @@ export function createStandardRule(): RuleConfig {
     { id: 'chun',  label: '中' },
   ];
 
+  const redFiveIds = new Set(['man5', 'pin5', 'sou5']);
+
   const tiles = [
     ...suits.flatMap(s =>
-      Array.from({ length: 9 }, (_, i) => ({
-        id: `${s.prefix}${i + 1}`,
-        label: `${i + 1}${s.label}`,
-        count: 4,
-      })),
+      Array.from({ length: 9 }, (_, i) => {
+        const id = `${s.prefix}${i + 1}`;
+        return {
+          id,
+          label: `${i + 1}${s.label}`,
+          count: 4,
+          ...(redFiveIds.has(id) ? { variants: { red: 1 } } : {}),
+        };
+      }),
     ),
     ...honors.map(h => ({ ...h, count: 4 })),
   ];
