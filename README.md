@@ -39,26 +39,80 @@ graph TD
 ├── .devcontainer/
 │   ├── Dockerfile          # wrangler 実行環境
 │   └── docker-compose.yml
+├── packages/
+│   ├── game-core/          # ゲームロジック（Pure TypeScript・UI非依存）
+│   │   └── src/
+│   │       ├── types/      # 型定義（牌・手牌・点数・卓状態・ルール）
+│   │       ├── game-state.ts
+│   │       ├── actions.ts  # 状態遷移の純粋関数
+│   │       ├── defaults.ts # 標準4人麻雀のデフォルトルール
+│   │       └── index.ts
+│   └── rule-loader/        # YAMLルール設定の検証・変換
+│       └── src/
+│           ├── schema.ts   # Zod スキーマ（YAML構造）
+│           ├── loader.ts   # parseRuleConfig()
+│           └── index.ts
 ├── worker/                 # シグナリングサーバ (Cloudflare Workers)
 │   ├── src/
 │   │   ├── index.ts        # エントリポイント・ルーティング
 │   │   └── room.ts         # Durable Object（ルーム管理）
 │   └── wrangler.toml
-├── frontend/               # Vue.js フロントエンド
+├── frontend/               # Vue.js フロントエンド（デバッグUI含む）
 │   └── src/
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
 
-## 開発環境のセットアップ
+## 開発
+
+### セットアップ
+
+```bash
+npm install
+```
+
+### テスト
+
+```bash
+# 全パッケージのテストを一括実行
+npm run test --workspaces
+
+# パッケージごとに実行
+npm test --workspace=packages/game-core
+npm test --workspace=packages/rule-loader
+```
+
+### フロントエンド（デバッグUI）のローカル起動
+
+```bash
+npm run dev --workspace=frontend
+```
+
+ブラウザで `http://localhost:5173` を開くと、ゲームロジックの動作確認ができます。
+
+### ルール設定の YAML 検証
+
+`rule-loader` パッケージを使って、YAML ファイルが正しい形式かどうかをスクリプトで確認できます。
+
+```ts
+import jsYaml from 'js-yaml';
+import { parseRuleConfig } from '@any-style-mahjong/rule-loader';
+import { readFileSync } from 'fs';
+
+const data = jsYaml.load(readFileSync('my-rule.yaml', 'utf8'));
+const rule = parseRuleConfig(data); // 不正な場合は Error を投げる
+console.log(`牌の種類: ${rule.tiles.length}`);
+```
+
+## Cloudflare へのデプロイ
 
 ### 必要なもの
 
 - Docker / Docker Compose（wrangler 実行用）
 - Cloudflare アカウント
 
-### 環境変数の設定
+### 環境変数の設定（Cloudflare デプロイ時）
 
 プロジェクトの **1つ上の階層** に `.env` ファイルを作成（リポジトリ外に置くことで誤コミットを防ぐ）:
 
@@ -70,7 +124,7 @@ CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
 Cloudflare API トークンは [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens) で発行してください。  
 必要な権限: `Workers Scripts:Edit`, `Workers KV Storage:Edit`
 
-### wrangler コマンドの実行
+### wrangler コマンド
 
 ```bash
 # イメージのビルド（初回のみ）

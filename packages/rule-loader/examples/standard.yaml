@@ -1,0 +1,96 @@
+players:
+  - id: p1
+    name: 東家
+  - id: p2
+    name: 南家
+  - id: p3
+    name: 西家
+  - id: p4
+    name: 北家
+
+tiles:
+  suits:
+    - prefix: man
+      label: 萬
+      range: [1, 9]
+      count: 4
+      tiles:
+        5:
+          variants:
+            red: 1
+    - prefix: pin
+      label: 筒
+      range: [1, 9]
+      count: 4
+      tiles:
+        5:
+          variants:
+            red: 1
+    - prefix: sou
+      label: 索
+      range: [1, 9]
+      count: 4
+      tiles:
+        5:
+          variants:
+            red: 1
+  honors:
+    - id: east
+      label: 東
+      count: 4
+    - id: south
+      label: 南
+      count: 4
+    - id: west
+      label: 西
+      count: 4
+    - id: north
+      label: 北
+      count: 4
+    - id: haku
+      label: 白
+      count: 4
+    - id: hatsu
+      label: 發
+      count: 4
+    - id: chun
+      label: 中
+      count: 4
+
+initialHandCount: 13
+
+dora:
+  - positionFromBack: 5
+
+scoreUnits:
+  - id: points
+    label: 点
+
+initialScore:
+  points: 25000
+
+tableStates:
+  - id: dealer
+    label: 親
+    kind: exclusive
+  - id: round
+    label: 場
+    kind: global
+    values: [東, 南, 西, 北]
+  - id: honba
+    label: 本場
+    kind: global
+
+declarations:
+  - id: pon
+    label: ポン
+  - id: chi
+    label: チー
+  - id: kan
+    label: カン
+  - id: ron
+    label: ロン
+  - id: tsumo
+    label: ツモ
+  - id: riichi
+    label: リーチ

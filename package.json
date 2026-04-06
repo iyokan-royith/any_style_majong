@@ -3,5 +3,8 @@
   "workspaces": [
     "packages/*",
     "frontend"
-  ]
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present"
+  }
 }

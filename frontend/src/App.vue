@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { load as yamlLoad } from 'js-yaml';
 import {
   createInitialState,
   initializeGame,
@@ -7,16 +8,47 @@ import {
   discardTile,
   transferScore,
   revealWallTile,
+  createStandardRule,
   type GameState,
   type HandTile,
+  type RuleConfig,
 } from '@any-style-mahjong/game-core';
-import { createStandardRule } from '@any-style-mahjong/game-core';
+import { parseRuleConfig } from '@any-style-mahjong/rule-loader';
 
-const rule = createStandardRule();
-const state = ref<GameState>(createInitialState(rule));
+const currentRule = ref<RuleConfig>(createStandardRule());
+const state = ref<GameState>(createInitialState(currentRule.value));
+const yamlError = ref<string | null>(null);
+const loadedFileName = ref<string | null>(null);
+const showRuleDetail = ref(false);
 
 function initialize() {
-  state.value = initializeGame(createInitialState(rule));
+  state.value = initializeGame(createInitialState(currentRule.value));
+}
+
+function resetToStandard() {
+  currentRule.value = createStandardRule();
+  loadedFileName.value = null;
+  yamlError.value = null;
+  state.value = createInitialState(currentRule.value);
+}
+
+async function onYamlFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  yamlError.value = null;
+  try {
+    const text = await file.text();
+    const data = yamlLoad(text);
+    const rule = parseRuleConfig(data);
+    currentRule.value = rule;
+    loadedFileName.value = file.name;
+    state.value = createInitialState(rule);
+  } catch (e) {
+    yamlError.value = e instanceof Error ? e.message : String(e);
+    // ファイル選択をリセットして再選択できるようにする
+    (event.target as HTMLInputElement).value = '';
+  }
 }
 
 function draw(playerId: string) {
@@ -31,14 +63,23 @@ function revealWall(index: number) {
   state.value = revealWallTile(state.value, index);
 }
 
-const transferForm = ref({ from: 'p1', to: 'p2', unit: 'points', amount: 1000 });
+const transferForm = ref({ from: '', to: '', unit: '', amount: 1000 });
+
+function syncTransferForm() {
+  const rule = currentRule.value;
+  transferForm.value.from = rule.players[0]?.id ?? '';
+  transferForm.value.to = rule.players[1]?.id ?? '';
+  transferForm.value.unit = rule.scoreUnits[0]?.id ?? '';
+}
+syncTransferForm();
+
 function doTransfer() {
   const { from, to, unit, amount } = transferForm.value;
   state.value = transferScore(state.value, from, to, unit, amount);
 }
 
 function tileLabel(definitionId: string): string {
-  return rule.tiles.find(t => t.id === definitionId)?.label ?? definitionId;
+  return state.value.rule.tiles.find(t => t.id === definitionId)?.label ?? definitionId;
 }
 
 function handTileClass(ht: HandTile): string {
@@ -49,6 +90,98 @@ function handTileClass(ht: HandTile): string {
 <template>
   <div class="app">
     <h1>Any Style Mahjong — デバッグUI</h1>
+
+    <!-- ルール設定 -->
+    <section class="panel">
+      <h2>ルール設定</h2>
+      <div class="rule-row">
+        <label class="file-label">
+          YAMLを読み込む
+          <input type="file" accept=".yaml,.yml" @change="onYamlFile" />
+        </label>
+        <span v-if="loadedFileName" class="file-name">{{ loadedFileName }}</span>
+        <button v-if="loadedFileName" @click="resetToStandard" class="btn-secondary">標準ルールに戻す</button>
+      </div>
+      <div v-if="yamlError" class="error-box">
+        <strong>読み込みエラー</strong>
+        <pre>{{ yamlError }}</pre>
+      </div>
+      <div class="rule-summary">
+        牌: {{ state.rule.tiles.length }}種 /
+        プレイヤー: {{ state.rule.players.length }}人 /
+        配牌: {{ state.rule.initialHandCount }}枚
+        <button class="btn-secondary btn-small" @click="showRuleDetail = !showRuleDetail">
+          {{ showRuleDetail ? '詳細を隠す' : '詳細を表示' }}
+        </button>
+      </div>
+
+      <div v-if="showRuleDetail" class="rule-detail">
+
+        <!-- プレイヤー -->
+        <div class="detail-row">
+          <span class="detail-label">プレイヤー</span>
+          <span v-for="p in state.rule.players" :key="p.id" class="detail-badge">
+            {{ p.name }} <small class="muted">({{ p.id }})</small>
+          </span>
+        </div>
+
+        <!-- 配牌・ドラ -->
+        <div class="detail-row">
+          <span class="detail-label">配牌</span>
+          <span class="detail-badge">{{ state.rule.initialHandCount }}枚</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">ドラ</span>
+          <span v-if="state.rule.dora.length === 0" class="muted">なし</span>
+          <span v-for="(d, i) in state.rule.dora" :key="i" class="detail-badge">
+            後ろから{{ d.positionFromBack }}枚目
+          </span>
+        </div>
+
+        <!-- 点数 -->
+        <div class="detail-row">
+          <span class="detail-label">点数単位</span>
+          <span v-for="u in state.rule.scoreUnits" :key="u.id" class="detail-badge">
+            {{ u.label }}
+            <small class="muted">（初期: {{ state.rule.initialScore[u.id]?.toLocaleString() }}）</small>
+          </span>
+        </div>
+
+        <!-- 牌 -->
+        <div class="detail-row detail-row--top">
+          <span class="detail-label">牌</span>
+          <div class="tile-defs">
+            <span v-for="t in state.rule.tiles" :key="t.id" class="detail-badge" :title="t.id">
+              {{ t.label }}×{{ t.count }}
+              <template v-if="t.variants">
+                <span v-for="(n, v) in t.variants" :key="v" class="variant-note">{{ v }}×{{ n }}</span>
+              </template>
+            </span>
+          </div>
+        </div>
+
+        <!-- 卓状態 -->
+        <div class="detail-row">
+          <span class="detail-label">卓状態</span>
+          <span v-if="state.rule.tableStates.length === 0" class="muted">なし</span>
+          <span v-for="s in state.rule.tableStates" :key="s.id" class="detail-badge">
+            {{ s.label }}
+            <small class="muted">
+              [{{ s.kind }}]
+              <template v-if="s.values">{{ s.values.join(' / ') }}</template>
+            </small>
+          </span>
+        </div>
+
+        <!-- 発声 -->
+        <div class="detail-row">
+          <span class="detail-label">発声</span>
+          <span v-if="state.rule.declarations.length === 0" class="muted">なし</span>
+          <span v-for="d in state.rule.declarations" :key="d.id" class="detail-badge">{{ d.label }}</span>
+        </div>
+
+      </div>
+    </section>
 
     <!-- コントロール -->
     <section class="panel">
@@ -61,23 +194,35 @@ function handTileClass(ht: HandTile): string {
       <h2>点数移動</h2>
       <div class="transfer-form">
         <select v-model="transferForm.from">
-          <option v-for="p in rule.players" :key="p.id" :value="p.id">{{ p.name }}</option>
+          <option v-for="p in state.rule.players" :key="p.id" :value="p.id">{{ p.name }}</option>
           <option value="supply">供託</option>
         </select>
         <span> → </span>
         <select v-model="transferForm.to">
-          <option v-for="p in rule.players" :key="p.id" :value="p.id">{{ p.name }}</option>
+          <option v-for="p in state.rule.players" :key="p.id" :value="p.id">{{ p.name }}</option>
           <option value="supply">供託</option>
         </select>
+        <select v-model="transferForm.unit">
+          <option v-for="u in state.rule.scoreUnits" :key="u.id" :value="u.id">{{ u.label }}</option>
+        </select>
         <input v-model.number="transferForm.amount" type="number" min="1" style="width: 80px" />
-        <span>点</span>
         <button @click="doTransfer">移動</button>
       </div>
       <div class="scores">
-        <span v-for="p in state.players" :key="p.id" class="score-badge">
-          {{ p.name }}: {{ p.score.points?.toLocaleString() }}点
+        <template v-for="p in state.players" :key="p.id">
+          <span class="score-badge">
+            {{ p.name }}:
+            <span v-for="u in state.rule.scoreUnits" :key="u.id">
+              {{ p.score[u.id]?.toLocaleString() }}{{ u.label }}
+            </span>
+          </span>
+        </template>
+        <span class="score-badge">
+          供託:
+          <span v-for="u in state.rule.scoreUnits" :key="u.id">
+            {{ state.supply[u.id]?.toLocaleString() }}{{ u.label }}
+          </span>
         </span>
-        <span class="score-badge">供託: {{ state.supply.points?.toLocaleString() }}点</span>
       </div>
     </section>
 
@@ -89,7 +234,7 @@ function handTileClass(ht: HandTile): string {
           v-for="(tile, i) in state.wall.tiles"
           :key="tile.instanceId"
           class="tile"
-          :class="tile.faceUp ? 'face-up' : 'face-down'"
+          :class="[tile.faceUp ? 'face-up' : 'face-down', tile.faceUp && tile.variant ? `variant-${tile.variant}` : '']"
           @click="revealWall(i)"
           :title="`[${i}] クリックで公開`"
         >
@@ -102,7 +247,11 @@ function handTileClass(ht: HandTile): string {
     <section v-for="player in state.players" :key="player.id" class="panel player-panel">
       <h2>
         {{ player.name }}
-        <span class="score">{{ player.score.points?.toLocaleString() }}点</span>
+        <span class="score">
+          <span v-for="u in state.rule.scoreUnits" :key="u.id">
+            {{ player.score[u.id]?.toLocaleString() }}{{ u.label }}
+          </span>
+        </span>
         <button @click="draw(player.id)" :disabled="state.wall.tiles.length === 0">ツモ</button>
       </h2>
 
@@ -112,7 +261,7 @@ function handTileClass(ht: HandTile): string {
           v-for="ht in player.tiles.hand"
           :key="ht.tile.instanceId"
           class="tile"
-          :class="handTileClass(ht)"
+          :class="[handTileClass(ht), ht.tile.faceUp && ht.tile.variant ? `variant-${ht.tile.variant}` : '']"
           @click="discard(player.id, ht.tile.instanceId)"
           title="クリックで捨牌"
         >
@@ -127,6 +276,7 @@ function handTileClass(ht: HandTile): string {
           v-for="tile in player.tiles.river"
           :key="tile.instanceId"
           class="tile face-up"
+          :class="tile.variant ? `variant-${tile.variant}` : ''"
         >
           {{ tileLabel(tile.definitionId) }}
         </span>
@@ -189,4 +339,74 @@ button:hover:not(:disabled) { background: #5b8; }
 
 .transfer-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 select, input { background: #333; color: #eee; border: 1px solid #555; padding: 3px 6px; border-radius: 4px; }
+
+.rule-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.file-label {
+  background: #446;
+  color: #cdf;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.file-label input[type="file"] { display: none; }
+.file-label:hover { background: #558; }
+.file-name { font-size: 0.85em; color: #8cf; }
+.btn-secondary { background: #555; }
+.btn-secondary:hover { background: #666; }
+
+.rule-summary { margin-top: 8px; font-size: 0.8em; color: #888; }
+
+.btn-small { padding: 1px 6px; font-size: 0.85em; margin-left: 10px; }
+
+.rule-detail {
+  margin-top: 10px;
+  border-top: 1px solid #3a3a3a;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.82em;
+}
+.detail-row--top { align-items: flex-start; }
+.detail-label {
+  color: #888;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+.detail-badge {
+  background: #333;
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.tile-defs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.variant-note {
+  margin-left: 3px;
+  color: #f88;
+  font-size: 0.85em;
+}
+.muted { color: #666; }
+
+.error-box {
+  margin-top: 8px;
+  background: #422;
+  border: 1px solid #844;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #faa;
+}
+.error-box pre { margin: 4px 0 0; font-size: 0.8em; white-space: pre-wrap; word-break: break-all; }
+
+.tile.variant-red { background: #f88; color: #600; }
 </style>
