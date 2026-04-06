@@ -1,0 +1,11 @@
+services:
+  wrangler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace
+    env_file:
+      - ../../.env
+    stdin_open: true
+    tty: true
