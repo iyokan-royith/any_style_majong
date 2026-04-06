@@ -4,29 +4,24 @@ WebRTC P2P 通信を使ったリアルタイム麻雀テーブルゲーム。
 
 ## アーキテクチャ
 
-```plantuml
-@startuml
-skinparam componentStyle rectangle
+```mermaid
+graph TD
+  subgraph Cloudflare
+    worker["Workers + Durable Objects\n(シグナリングサーバ)"]
+    pages["Pages\n(Vue.js SPA)"]
+  end
 
-cloud "Cloudflare" {
-  component "Workers + Durable Objects\n(シグナリングサーバ)" as worker
-  component "Pages\n(Vue.js SPA)" as pages
-}
+  playerA["プレイヤー A"]
+  playerB["プレイヤー B〜D"]
+  spectator["観戦者"]
+  stun[("Google STUN")]
 
-component "プレイヤー A" as playerA
-component "プレイヤー B〜D" as playerB
-component "観戦者" as spectator
-database "Google STUN" as stun
-
-playerA  <-down-> worker  : WebSocket\n(シグナリング)
-playerB  <-down-> worker  : WebSocket\n(シグナリング)
-spectator <-down- worker  : WebSocket\n(ゲーム状態配信)
-playerA  <-right-> playerB : WebRTC DataChannel\n(P2P・ゲームデータ)
-playerA  -down-> stun     : ICE候補取得
-playerB  -down-> stun     : ICE候補取得
-
-pages -[hidden]- worker
-@enduml
+  playerA  <-->|"WebSocket\n(シグナリング)"| worker
+  playerB  <-->|"WebSocket\n(シグナリング)"| worker
+  worker   -->|"WebSocket\n(ゲーム状態配信)"| spectator
+  playerA  <-->|"WebRTC DataChannel\n(P2P・ゲームデータ)"| playerB
+  playerA  -->|"ICE候補取得"| stun
+  playerB  -->|"ICE候補取得"| stun
 ```
 
 | レイヤー | 技術 | ホスティング |
