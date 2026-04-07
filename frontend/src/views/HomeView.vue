@@ -2,6 +2,7 @@
   <div class="home">
     <h1>Any Style Mahjong</h1>
     <p>（工事中）</p>
+    <RouterLink to="/game">ゲーム</RouterLink>
     <RouterLink to="/debug">デバッグUI</RouterLink>
   </div>
 </template>
