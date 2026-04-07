@@ -8,12 +8,18 @@
   <div class="game-table">
     <!-- 上プレイヤー -->
     <div class="cell cell-top">
-      <PlayerArea :player="seats.top" position="top" />
+      <PlayerArea
+        :player="seats.top" position="top"
+        @discard="id => onDiscard(seats.top, id)"
+      />
     </div>
 
     <!-- 左プレイヤー -->
     <div class="cell cell-left">
-      <PlayerArea :player="seats.left" position="left" />
+      <PlayerArea
+        :player="seats.left" position="left"
+        @discard="id => onDiscard(seats.left, id)"
+      />
     </div>
 
     <!-- 中央: 牌山リング + 捨牌 -->
@@ -32,12 +38,18 @@
 
     <!-- 右プレイヤー -->
     <div class="cell cell-right">
-      <PlayerArea :player="seats.right" position="right" />
+      <PlayerArea
+        :player="seats.right" position="right"
+        @discard="id => onDiscard(seats.right, id)"
+      />
     </div>
 
-    <!-- 下プレイヤー（自分） -->
+    <!-- 下プレイヤー（自分）: 常に手牌を表向きで表示 -->
     <div class="cell cell-bottom">
-      <PlayerArea :player="seats.bottom" position="bottom" />
+      <PlayerArea
+        :player="seats.bottom" position="bottom" :show-face-up="true"
+        @discard="id => onDiscard(seats.bottom, id)"
+      />
     </div>
   </div>
 </template>
@@ -51,6 +63,14 @@ import WallRing from './WallRing.vue';
 import DiscardArea from './DiscardArea.vue';
 
 const props = defineProps<{ state: GameState }>();
+
+const emit = defineEmits<{
+  discard: [playerId: string, instanceId: string];
+}>();
+
+function onDiscard(player: Player | null, instanceId: string) {
+  if (player) emit('discard', player.id, instanceId);
+}
 
 /**
  * プレイヤーを座席に割り当てる。

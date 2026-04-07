@@ -4,11 +4,12 @@
       <div class="player-name">{{ player.name }}</div>
       <div class="hand">
         <div
-          v-for="(ht, i) in player.tiles.hand"
-          :key="i"
-          :class="['tile', { sideways: ht.sideways, 'face-up': ht.tile.faceUp, 'face-down': !ht.tile.faceUp }]"
+          v-for="ht in player.tiles.hand"
+          :key="ht.tile.instanceId"
+          :class="['tile', { sideways: ht.sideways, 'face-up': visible(ht.tile.faceUp), 'face-down': !visible(ht.tile.faceUp) }]"
+          @click="emit('discard', ht.tile.instanceId)"
         >
-          {{ ht.tile.faceUp ? ht.tile.definitionId : '' }}
+          {{ visible(ht.tile.faceUp) ? ht.tile.definitionId : '' }}
         </div>
       </div>
     </template>
@@ -21,10 +22,20 @@
 <script setup lang="ts">
 import type { Player } from '@any-style-mahjong/game-core';
 
-defineProps<{
+const props = defineProps<{
   player: Player | null;
   position: 'top' | 'bottom' | 'left' | 'right';
+  /** true のとき、裏牌も表向きとして表示する（自分の手牌用） */
+  showFaceUp?: boolean;
 }>();
+
+const emit = defineEmits<{
+  discard: [instanceId: string];
+}>();
+
+function visible(faceUp: boolean): boolean {
+  return props.showFaceUp === true || faceUp;
+}
 </script>
 
 <style scoped>

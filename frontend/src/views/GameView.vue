@@ -2,7 +2,7 @@
   <div class="game-view">
     <!-- 左: 卓上 + 基本動作 -->
     <div class="table-area">
-      <GameTable :state="state" />
+      <GameTable :state="state" @discard="onDiscard" />
 
       <div class="action-bar">
         <button @click="onDraw">ツモ <kbd>Space</kbd></button>
@@ -61,6 +61,7 @@ import {
   createInitialState,
   initializeGame,
   drawToHand,
+  discardTile,
   createStandardRule,
   wallRemaining,
 } from '@any-style-mahjong/game-core';
@@ -81,6 +82,10 @@ function onDraw() {
 
 function toggleMode() {
   discardMode.value = !discardMode.value;
+}
+
+function onDiscard(playerId: string, instanceId: string) {
+  state.value = discardTile(state.value, playerId, instanceId);
 }
 
 function onRevealHand() {
