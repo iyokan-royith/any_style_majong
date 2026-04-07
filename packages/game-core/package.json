@@ -1,0 +1,14 @@
+{
+  "name": "@any-style-mahjong/game-core",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  }
+}

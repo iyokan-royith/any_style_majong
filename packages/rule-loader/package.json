@@ -1,0 +1,21 @@
+{
+  "name": "@any-style-mahjong/rule-loader",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@any-style-mahjong/game-core": "*",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0"
+  }
+}

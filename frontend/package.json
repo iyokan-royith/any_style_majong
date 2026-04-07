@@ -1,0 +1,24 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@any-style-mahjong/game-core": "*",
+    "@any-style-mahjong/rule-loader": "*",
+    "js-yaml": "^4.1.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0",
+    "vue-tsc": "^2.0.0"
+  }
+}
