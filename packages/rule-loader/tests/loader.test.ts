@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { load as yamlLoad } from 'js-yaml';
 import { parseRuleConfig } from '../src/index.js';
-import { createStandardRule } from '@any-style-mahjong/game-core';
+import { createStandardRule, createInitialState, initializeGame, wallRemaining } from '@any-style-mahjong/game-core';
 
 const baseRule = {
   players: [
@@ -156,5 +156,35 @@ describe('examples/standard.yaml', () => {
   it('卓状態・発声が一致する', () => {
     expect(rule.tableStates).toEqual(standard.tableStates);
     expect(rule.declarations).toEqual(standard.declarations);
+  });
+});
+
+describe('examples/goga_roku.yaml', () => {
+  const text = readFileSync(new URL('../examples/goga_roku.yaml', import.meta.url), 'utf8');
+
+  it('エラーなく読み込める', () => {
+    expect(() => parseRuleConfig(yamlLoad(text))).not.toThrow();
+  });
+
+  it('dora.positionFromBack が正しく読み込まれる', () => {
+    const rule = parseRuleConfig(yamlLoad(text));
+    expect(rule.dora).toHaveLength(1);
+    expect(rule.dora[0].positionFromBack).toBe(7);
+  });
+
+  it('ゲーム初期化後に tail から 7 枚目の牌が表になっている', () => {
+    const rule = parseRuleConfig(yamlLoad(text));
+    const state = initializeGame(createInitialState(rule));
+    const doraIndex = state.wall.tail - (7 - 1);
+    const doraTile = state.wall.tiles[doraIndex];
+    expect(doraTile).not.toBeNull();
+    expect(doraTile!.faceUp).toBe(true);
+    // その他の牌は裏のまま
+    const remaining = wallRemaining(state.wall);
+    const faceUpCount = state.wall.tiles
+      .slice(state.wall.head, state.wall.tail + 1)
+      .filter(t => t !== null && t.faceUp).length;
+    expect(faceUpCount).toBe(rule.dora.length);
+    expect(remaining).toBeGreaterThan(0);
   });
 });

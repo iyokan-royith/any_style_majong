@@ -1,6 +1,7 @@
 import type { GameState, Player } from './game-state.js';
 import type { Tile } from './types/tile.js';
 import type { HandTile } from './types/hand.js';
+import { wallRemaining } from './types/wall.js';
 
 // ── ユーティリティ ─────────────────────────────
 
@@ -50,9 +51,10 @@ export function shuffleWall(state: GameState): GameState {
     }
   }
 
+  const shuffled = shuffle(allTiles);
   return {
     ...state,
-    wall: { tiles: shuffle(allTiles) },
+    wall: { tiles: shuffled, head: 0, tail: shuffled.length - 1 },
     players: state.players.map(p => ({
       ...p,
       tiles: { hand: [], river: [] },
@@ -68,14 +70,20 @@ export function drawToHand(
   playerId: string,
   from: 'head' | 'tail',
 ): GameState {
-  if (state.wall.tiles.length === 0) throw new Error('Wall is empty');
+  if (wallRemaining(state.wall) === 0) throw new Error('Wall is empty');
 
-  const wallTiles = [...state.wall.tiles];
-  const tile = from === 'head' ? wallTiles.shift()! : wallTiles.pop()!;
+  const wall = state.wall;
+  const index = from === 'head' ? wall.head : wall.tail;
+  const tile = wall.tiles[index]!;
+  const tiles = [...wall.tiles];
+  tiles[index] = null;
+  const newWall = from === 'head'
+    ? { ...wall, tiles, head: wall.head + 1 }
+    : { ...wall, tiles, tail: wall.tail - 1 };
+
   const handTile: HandTile = { tile: { ...tile, faceUp: false }, sideways: false };
-
   return updatePlayer(
-    { ...state, wall: { tiles: wallTiles } },
+    { ...state, wall: newWall },
     playerId,
     p => ({ ...p, tiles: { ...p.tiles, hand: [...p.tiles.hand, handTile] } }),
   );
@@ -89,30 +97,37 @@ export function drawToRiver(
   playerId: string,
   from: 'head' | 'tail',
 ): GameState {
-  if (state.wall.tiles.length === 0) throw new Error('Wall is empty');
+  if (wallRemaining(state.wall) === 0) throw new Error('Wall is empty');
 
-  const wallTiles = [...state.wall.tiles];
-  const tile = from === 'head' ? wallTiles.shift()! : wallTiles.pop()!;
+  const wall = state.wall;
+  const index = from === 'head' ? wall.head : wall.tail;
+  const tile = wall.tiles[index]!;
+  const tiles = [...wall.tiles];
+  tiles[index] = null;
+  const newWall = from === 'head'
+    ? { ...wall, tiles, head: wall.head + 1 }
+    : { ...wall, tiles, tail: wall.tail - 1 };
+
   const revealedTile: Tile = { ...tile, faceUp: true };
-
   return updatePlayer(
-    { ...state, wall: { tiles: wallTiles } },
+    { ...state, wall: newWall },
     playerId,
     p => ({ ...p, tiles: { ...p.tiles, river: [...p.tiles.river, revealedTile] } }),
   );
 }
 
 /**
- * 牌山の任意の位置の牌を表にする
+ * 牌山の任意の絶対インデックスの牌を表にする
  */
 export function revealWallTile(state: GameState, index: number): GameState {
-  if (index < 0 || index >= state.wall.tiles.length) {
+  const wall = state.wall;
+  if (index < 0 || index >= wall.tiles.length || wall.tiles[index] === null) {
     throw new Error(`Invalid wall index: ${index}`);
   }
-  const tiles = state.wall.tiles.map((t, i) =>
-    i === index ? { ...t, faceUp: true } : t,
+  const tiles = wall.tiles.map((t, i) =>
+    i === index && t !== null ? { ...t, faceUp: true } : t,
   );
-  return { ...state, wall: { tiles } };
+  return { ...state, wall: { ...wall, tiles } };
 }
 
 // ── 手牌操作 ────────────────────────────────────
@@ -276,10 +291,10 @@ export function initializeGame(state: GameState): GameState {
     }
   }
 
-  // ドラ公開
+  // ドラ公開（tail からの相対位置で計算）
   for (const dora of state.rule.dora) {
-    const index = next.wall.tiles.length - dora.positionFromBack;
-    if (index >= 0 && index < next.wall.tiles.length) {
+    const index = next.wall.tail - (dora.positionFromBack - 1);
+    if (index >= next.wall.head && index <= next.wall.tail) {
       next = revealWallTile(next, index);
     }
   }

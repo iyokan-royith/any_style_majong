@@ -1,5 +1,6 @@
 export type { Tile, TileDefinition } from './types/tile.js';
 export type { Wall } from './types/wall.js';
+export { wallRemaining } from './types/wall.js';
 export type { HandTile, PlayerTiles } from './types/hand.js';
 export type { Score, ScoreUnit } from './types/score.js';
 export type { TableState, TableStateDefinition, TableStateKind } from './types/table-state.js';

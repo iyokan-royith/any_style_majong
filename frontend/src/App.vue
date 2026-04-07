@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { load as yamlLoad } from 'js-yaml';
 import {
   createInitialState,
@@ -8,6 +8,7 @@ import {
   discardTile,
   transferScore,
   revealWallTile,
+  wallRemaining,
   createStandardRule,
   type GameState,
   type HandTile,
@@ -85,6 +86,19 @@ function tileLabel(definitionId: string): string {
 function handTileClass(ht: HandTile): string {
   return [ht.tile.faceUp ? 'face-up' : 'face-down', ht.sideways ? 'sideways' : ''].join(' ');
 }
+
+/** 牌山を「下段(偶数index) + 上段(奇数index)」のペアに変換 */
+const wallColumns = computed(() => {
+  const tiles = state.value.wall.tiles;
+  const cols = [];
+  for (let i = 0; i < tiles.length; i += 2) {
+    cols.push({
+      bottom: { tile: tiles[i],     index: i },
+      top:    { tile: tiles[i + 1], index: i + 1 },
+    });
+  }
+  return cols;
+});
 </script>
 
 <template>
@@ -228,18 +242,40 @@ function handTileClass(ht: HandTile): string {
 
     <!-- 牌山 -->
     <section class="panel">
-      <h2>牌山（{{ state.wall.tiles.length }}枚）</h2>
-      <div class="wall">
-        <span
-          v-for="(tile, i) in state.wall.tiles"
-          :key="tile.instanceId"
-          class="tile"
-          :class="[tile.faceUp ? 'face-up' : 'face-down', tile.faceUp && tile.variant ? `variant-${tile.variant}` : '']"
-          @click="revealWall(i)"
-          :title="`[${i}] クリックで公開`"
-        >
-          {{ tile.faceUp ? tileLabel(tile.definitionId) : '■' }}
-        </span>
+      <h2>牌山（{{ wallRemaining(state.wall) }}枚）</h2>
+      <div class="wall-2d">
+        <!-- 上段（奇数インデックス） -->
+        <div class="wall-row">
+          <template v-for="col in wallColumns" :key="col.top.index">
+            <span
+              v-if="col.top.tile !== null"
+              class="wall-tile"
+              :class="[
+                col.top.tile.faceUp ? 'face-up' : 'face-down',
+                col.top.tile.faceUp && col.top.tile.variant ? `variant-${col.top.tile.variant}` : '',
+              ]"
+              @click="revealWall(col.top.index)"
+              :title="`[${col.top.index}] 上段 クリックで公開`"
+            >{{ col.top.tile.faceUp ? tileLabel(col.top.tile.definitionId) : '■' }}</span>
+            <span v-else class="wall-tile wall-tile--gone" :title="`[${col.top.index}] ツモ済`"></span>
+          </template>
+        </div>
+        <!-- 下段（偶数インデックス） -->
+        <div class="wall-row">
+          <template v-for="col in wallColumns" :key="col.bottom.index">
+            <span
+              v-if="col.bottom.tile !== null"
+              class="wall-tile"
+              :class="[
+                col.bottom.tile.faceUp ? 'face-up' : 'face-down',
+                col.bottom.tile.faceUp && col.bottom.tile.variant ? `variant-${col.bottom.tile.variant}` : '',
+              ]"
+              @click="revealWall(col.bottom.index)"
+              :title="`[${col.bottom.index}] 下段 クリックで公開`"
+            >{{ col.bottom.tile.faceUp ? tileLabel(col.bottom.tile.definitionId) : '■' }}</span>
+            <span v-else class="wall-tile wall-tile--gone" :title="`[${col.bottom.index}] ツモ済`"></span>
+          </template>
+        </div>
       </div>
     </section>
 
@@ -252,7 +288,7 @@ function handTileClass(ht: HandTile): string {
             {{ player.score[u.id]?.toLocaleString() }}{{ u.label }}
           </span>
         </span>
-        <button @click="draw(player.id)" :disabled="state.wall.tiles.length === 0">ツモ</button>
+        <button @click="draw(player.id)" :disabled="wallRemaining(state.wall) === 0">ツモ</button>
       </h2>
 
       <div class="hand-label">手牌</div>
@@ -328,7 +364,24 @@ button:hover:not(:disabled) { background: #5b8; }
 .tile.face-down { background: #446; color: #aaa; }
 .tile.sideways { transform: rotate(90deg); margin: 4px 8px; }
 
-.wall { display: flex; flex-wrap: wrap; gap: 2px; max-height: 120px; overflow-y: auto; }
+.wall-2d { overflow-x: auto; display: inline-block; max-width: 100%; }
+.wall-row { display: flex; gap: 1px; margin-bottom: 1px; }
+.wall-row:first-child { margin-bottom: 0; }
+.wall-tile {
+  display: inline-block;
+  width: 26px;
+  text-align: center;
+  padding: 2px 0;
+  border-radius: 2px;
+  font-size: 0.8em;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.wall-tile.face-up { background: #f5f0e0; color: #222; }
+.wall-tile.face-down { background: #446; color: #aaa; }
+.wall-tile.variant-red { background: #f88; color: #600; }
+.wall-tile--gone { background: transparent; border: 1px dashed #2a2a2a; cursor: default; }
 .hand, .river { display: flex; flex-wrap: wrap; align-items: center; min-height: 32px; }
 .hand-label { font-size: 0.75em; color: #888; margin-top: 6px; }
 .empty { color: #555; font-size: 0.8em; }

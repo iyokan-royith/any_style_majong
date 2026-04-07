@@ -25,7 +25,7 @@ export function createInitialState(rule: RuleConfig): GameState {
 
   return {
     rule,
-    wall: { tiles: [] },
+    wall: { tiles: [], head: 0, tail: -1 },
     players: rule.players.map(p => ({
       id: p.id,
       name: p.name,
