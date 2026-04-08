@@ -52,8 +52,8 @@ export function createStandardRule(): RuleConfig {
     initialScore: { points: 25000 },
     tableStates: [
       { id: 'dealer',  label: '親',  kind: 'exclusive' },
-      { id: 'round',   label: '場',  kind: 'global', values: ['東', '南', '西', '北'] },
-      { id: 'honba',   label: '本場', kind: 'global' },
+      { id: 'round',   label: '場',  kind: 'global', globalType: 'list',    values: ['東', '南', '西', '北'] },
+      { id: 'honba',   label: '本場', kind: 'global', globalType: 'integer' },
     ],
     declarations: [
       { id: 'pon',  label: 'ポン' },

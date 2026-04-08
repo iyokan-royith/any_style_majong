@@ -5,19 +5,10 @@ players:
     name: 南家
   - id: p3
     name: 西家
-  - id: p4
-    name: 北家
 
 tiles:
   suits:
-    - prefix: man
-      label: 萬
-      range: [1, 9]
-      count: 4
-      tiles:
-        5:
-          variants:
-            red: 1
+
     - prefix: pin
       label: 筒
       range: [1, 9]
@@ -25,7 +16,12 @@ tiles:
       tiles:
         5:
           variants:
-            red: 1
+            red: 2
+            gold: 2
+        7:
+          count: 8
+          variants:
+            rainbow: 1
     - prefix: sou
       label: 索
       range: [1, 9]
@@ -33,7 +29,12 @@ tiles:
       tiles:
         5:
           variants:
-            red: 1
+            red: 2
+            gold: 2
+        7:
+          count: 8
+          variants:
+            rainbow: 1
   honors:
     - id: east
       label: 東
@@ -56,18 +57,23 @@ tiles:
     - id: chun
       label: 中
       count: 4
+    - id: flower
+      label: 花
+      count: 4
 
 initialHandCount: 13
 
 dora:
-  - positionFromBack: 5
+  - positionFromBack: 9
 
 scoreUnits:
   - id: points
     label: 点
+  - id: chips
+    label: 枚
 
 initialScore:
-  points: 25000
+  points: 30000
 
 tableStates:
   - id: dealer
@@ -82,6 +88,11 @@ tableStates:
     label: 本場
     kind: global
     globalType: integer
+  - id: kattobi
+    label: カットビ
+    kind: per-player
+    perPlayerType: list
+    values: [満塁, ホームラン]
 
 declarations:
   - id: pon

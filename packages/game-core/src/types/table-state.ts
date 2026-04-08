@@ -3,11 +3,27 @@ export type TableStateKind =
   | 'per-player'  // 各プレイヤーが独立して持つ（例: 焼き鳥）
   | 'global';     // 場そのものの状態（例: 東場、本場）
 
+/**
+ * global の値の型:
+ *   'list'    — values 配列から選ぶ（例: 東場/南場）
+ *   'integer' — 整数値（本場数など）
+ *
+ * per-player の値の型:
+ *   'list'   — values 配列から選ぶ
+ *   'toggle' — オン/オフ二値
+ */
+export type GlobalValueType    = 'list' | 'integer';
+export type PerPlayerValueType = 'list' | 'toggle';
+
 export interface TableStateDefinition {
   id: string;
   label: string;
   kind: TableStateKind;
-  /** per-player / global の場合の取りうる値（省略時は自由な文字列） */
+  /** global 用: 値の型 (省略時は 'list') */
+  globalType?: GlobalValueType;
+  /** per-player 用: 値の型 (省略時は 'list') */
+  perPlayerType?: PerPlayerValueType;
+  /** list 型の場合の取りうる値 */
   values?: string[];
 }
 

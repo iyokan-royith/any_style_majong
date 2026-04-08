@@ -299,5 +299,38 @@ export function initializeGame(state: GameState): GameState {
     }
   }
 
+  // 卓状態の初期値をセット
+  for (const def of state.rule.tableStates) {
+    if (def.kind === 'global') {
+      const isInteger = def.globalType === 'integer';
+      if (isInteger) {
+        // integer: 初期値 0（まだセットされていない場合のみ）
+        if (next.tableState.global[def.id] === undefined) {
+          next = setGlobalState(next, def.id, '0');
+        }
+      } else {
+        // list: values[0] を初期値に
+        if (def.values && def.values.length > 0 && next.tableState.global[def.id] === undefined) {
+          next = setGlobalState(next, def.id, def.values[0]);
+        }
+      }
+    } else if (def.kind === 'per-player') {
+      const isList = !def.perPlayerType || def.perPlayerType === 'list';
+      if (isList && def.values && def.values.length > 0) {
+        for (const player of state.rule.players) {
+          if (next.tableState.perPlayer[def.id]?.[player.id] === undefined) {
+            next = setPerPlayerState(next, def.id, player.id, def.values[0]);
+          }
+        }
+      } else if (def.perPlayerType === 'toggle') {
+        for (const player of state.rule.players) {
+          if (next.tableState.perPlayer[def.id]?.[player.id] === undefined) {
+            next = setPerPlayerState(next, def.id, player.id, 'off');
+          }
+        }
+      }
+    }
+  }
+
   return next;
 }

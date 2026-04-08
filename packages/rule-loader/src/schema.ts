@@ -47,6 +47,8 @@ const TableStateDefinitionSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   kind: z.enum(['exclusive', 'per-player', 'global']),
+  globalType: z.enum(['list', 'integer']).optional(),
+  perPlayerType: z.enum(['list', 'toggle']).optional(),
   values: z.array(z.string()).optional(),
 });
 
