@@ -2,7 +2,7 @@
   <div class="game-view">
     <!-- 左: 卓上 + 基本動作 -->
     <div class="table-area">
-      <GameTable :state="state" @discard="onDiscard" />
+      <GameTable :state="state" @discard="onDiscard" @reveal="onRevealWall" />
 
       <div class="action-bar">
         <div class="action-row">
@@ -113,6 +113,11 @@
         </div>
       </section>
 
+      <!-- ── リセット ── -->
+      <section class="info-section">
+        <button class="btn-reset-game" @click="resetGame">卓をリセットする</button>
+      </section>
+
       <!-- ── ルール読み込み ── -->
       <section class="info-section rule-section">
         <h3>ルール</h3>
@@ -137,6 +142,7 @@ import {
   initializeGame,
   drawToHand,
   discardTile,
+  revealWallTile,
   setGlobalState,
   setExclusiveState,
   setPerPlayerState,
@@ -195,6 +201,14 @@ function toggleMode() {
 
 function onDiscard(playerId: string, instanceId: string) {
   state.value = discardTile(state.value, playerId, instanceId);
+}
+
+function resetGame() {
+  state.value = initializeGame(createInitialState(state.value.rule));
+}
+
+function onRevealWall(index: number) {
+  state.value = revealWallTile(state.value, index);
 }
 
 function onRevealHand() {
@@ -366,6 +380,14 @@ kbd {
 .file-name { font-size: 10px; color: #8cf; word-break: break-all; }
 .btn-reset { background: #3a2a2a; border-color: #7a4a4a; }
 .btn-reset:hover { background: #5a3a3a; }
+.btn-reset-game {
+  width: 100%;
+  background: #3a1a1a;
+  border-color: #8a3a3a;
+  color: #faa;
+}
+.btn-reset-game:hover { background: #5a2a2a; }
+
 .yaml-error {
   font-size: 10px;
   color: #f88;

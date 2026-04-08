@@ -11,8 +11,8 @@
     <!-- 上辺 -->
     <div class="wall-side side-top">
       <div v-for="col in sides.top" :key="col" class="wall-pair pair-portrait">
-        <div :class="['wt', 'wt-portrait', tileStatus(col + 1)]" />
-        <div :class="['wt', 'wt-portrait', tileStatus(col)]" />
+        <div :class="['wt', 'wt-portrait', tileStatus(col + 1)]" @click="onTileClick(col + 1)">{{ tileLabel(col + 1) }}</div>
+        <div :class="['wt', 'wt-portrait', tileStatus(col)]"     @click="onTileClick(col)">{{ tileLabel(col) }}</div>
       </div>
     </div>
 
@@ -20,8 +20,8 @@
       <!-- 左辺: 各行 = [outer(下段)|inner(上段)] の横並び、上から下へ -->
       <div class="wall-side side-left">
         <div v-for="col in sides.left" :key="col" class="wall-pair pair-landscape">
-          <div :class="['wt', 'wt-landscape', tileStatus(col)]" />
-          <div :class="['wt', 'wt-landscape', tileStatus(col + 1)]" />
+          <div :class="['wt', 'wt-landscape', tileStatus(col)]"     @click="onTileClick(col)">{{ tileLabel(col) }}</div>
+          <div :class="['wt', 'wt-landscape', tileStatus(col + 1)]" @click="onTileClick(col + 1)">{{ tileLabel(col + 1) }}</div>
         </div>
       </div>
 
@@ -30,8 +30,8 @@
       <!-- 右辺: 各行 = [inner(上段)|outer(下段)] の横並び、上から下へ -->
       <div class="wall-side side-right">
         <div v-for="col in sides.right" :key="col" class="wall-pair pair-landscape">
-          <div :class="['wt', 'wt-landscape', tileStatus(col + 1)]" />
-          <div :class="['wt', 'wt-landscape', tileStatus(col)]" />
+          <div :class="['wt', 'wt-landscape', tileStatus(col + 1)]" @click="onTileClick(col + 1)">{{ tileLabel(col + 1) }}</div>
+          <div :class="['wt', 'wt-landscape', tileStatus(col)]"     @click="onTileClick(col)">{{ tileLabel(col) }}</div>
         </div>
       </div>
     </div>
@@ -39,8 +39,8 @@
     <!-- 下辺 -->
     <div class="wall-side side-bottom">
       <div v-for="col in sides.bottom" :key="col" class="wall-pair pair-portrait">
-        <div :class="['wt', 'wt-portrait', tileStatus(col + 1)]" />
-        <div :class="['wt', 'wt-portrait', tileStatus(col)]" />
+        <div :class="['wt', 'wt-portrait', tileStatus(col + 1)]" @click="onTileClick(col + 1)">{{ tileLabel(col + 1) }}</div>
+        <div :class="['wt', 'wt-portrait', tileStatus(col)]"     @click="onTileClick(col)">{{ tileLabel(col) }}</div>
       </div>
     </div>
   </div>
@@ -48,9 +48,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Wall } from '@any-style-mahjong/game-core';
+import type { Wall, TileDefinition } from '@any-style-mahjong/game-core';
 
-const props = defineProps<{ wall: Wall }>();
+const props = defineProps<{
+  wall: Wall;
+  tileDefs: TileDefinition[];
+}>();
+
+const emit = defineEmits<{
+  reveal: [index: number];
+}>();
+
+function onTileClick(index: number) {
+  const { head, tail, tiles } = props.wall;
+  if (index < 0 || index >= tiles.length) return;
+  if (index < head || index > tail) return;
+  if (tiles[index] === null || tiles[index]?.faceUp) return;
+  emit('reveal', index);
+}
 
 /**
  * ペア(列)の偶数インデックス一覧を返す。
@@ -88,11 +103,20 @@ const sides = computed(() => {
  *  drawn      : 引かれた（暗く輪郭のみ）
  *  upper-drawn: 上段のみ引かれた（暗い）— 上段スロットを下段が残っているときに区別
  */
-function tileStatus(index: number): 'remaining' | 'drawn' {
+/** faceUp の牌のみラベルを返す。それ以外は空文字 */
+function tileLabel(index: number): string {
+  const tile = props.wall.tiles[index];
+  if (!tile || !tile.faceUp) return '';
+  return props.tileDefs.find(d => d.id === tile.definitionId)?.label ?? tile.definitionId;
+}
+
+function tileStatus(index: number): string {
   const { head, tail, tiles } = props.wall;
   if (index >= tiles.length) return 'drawn';
   if (index < head || index > tail) return 'drawn';
-  if (tiles[index] === null) return 'drawn';
+  const tile = tiles[index];
+  if (tile === null) return 'drawn';
+  if (tile.faceUp) return 'remaining face-up';
   return 'remaining';
 }
 </script>
@@ -153,6 +177,17 @@ function tileStatus(index: number): 'remaining' | 'drawn' {
 .wt {
   border-radius: 2px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 7px;
+  line-height: 1;
+  overflow: hidden;
+  color: transparent;
+}
+.wt.face-up {
+  color: #222;
 }
 
 /* 縦長（上下辺）: 手牌と同サイズ */
@@ -171,11 +206,27 @@ function tileStatus(index: number): 'remaining' | 'drawn' {
 .wt.remaining {
   background: #c8b560;
   border: 1px solid #a89040;
+  cursor: pointer;
+}
+.wt.remaining:hover {
+  background: #dac870;
+}
+
+/* 表向き（ドラ表示牌など） */
+.wt.face-up {
+  background: #f0e8c0;
+  border: 1px solid #c8a030;
+  box-shadow: inset 0 0 0 1px #e8c040;
+  cursor: default;
+}
+.wt.face-up:hover {
+  background: #f0e8c0;
 }
 
 /* 引かれた牌スロット（空の凹み） */
 .wt.drawn {
   background: #1a1a1a;
   border: 1px solid #333;
+  cursor: default;
 }
 </style>

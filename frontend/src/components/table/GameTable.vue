@@ -24,7 +24,7 @@
 
     <!-- 中央: 牌山リング + 捨牌 -->
     <div class="cell cell-inner">
-      <WallRing :wall="state.wall">
+      <WallRing :wall="state.wall" :tile-defs="state.rule.tiles" @reveal="idx => emit('reveal', idx)">
         <DiscardArea :rivers="rivers">
           <!-- 卓中央の場の状態 -->
           <div class="table-center-status">
@@ -70,6 +70,7 @@ const props = defineProps<{ state: GameState }>();
 
 const emit = defineEmits<{
   discard: [playerId: string, instanceId: string];
+  reveal:  [index: number];
 }>();
 
 function onDiscard(player: Player | null, instanceId: string) {
