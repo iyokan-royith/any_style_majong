@@ -9,7 +9,7 @@
           :class="['tile', { sideways: ht.sideways, 'face-up': visible(ht.tile.faceUp), 'face-down': !visible(ht.tile.faceUp) }]"
           @click="emit('discard', ht.tile.instanceId)"
         >
-          {{ visible(ht.tile.faceUp) ? ht.tile.definitionId : '' }}
+          {{ visible(ht.tile.faceUp) ? tileLabel(ht.tile.definitionId) : '' }}
         </div>
       </div>
     </template>
@@ -20,14 +20,19 @@
 </template>
 
 <script setup lang="ts">
-import type { Player } from '@any-style-mahjong/game-core';
+import type { Player, TileDefinition } from '@any-style-mahjong/game-core';
 
 const props = defineProps<{
   player: Player | null;
   position: 'top' | 'bottom' | 'left' | 'right';
+  tileDefs: TileDefinition[];
   /** true のとき、裏牌も表向きとして表示する（自分の手牌用） */
   showFaceUp?: boolean;
 }>();
+
+function tileLabel(definitionId: string): string {
+  return props.tileDefs.find(d => d.id === definitionId)?.label ?? definitionId;
+}
 
 const emit = defineEmits<{
   discard: [instanceId: string];

@@ -20,7 +20,7 @@
         :key="idx"
         :class="['slot', 'slot-portrait', rivers.top[idx - 1] ? 'occupied' : 'empty']"
         :style="topPos(idx - 1)"
-      >{{ rivers.top[idx - 1]?.definitionId ?? '' }}</div>
+      >{{ tileLabel(rivers.top[idx - 1]) }}</div>
     </div>
 
     <div class="river river-left">
@@ -29,7 +29,7 @@
         :key="idx"
         :class="['slot', 'slot-landscape', rivers.left[idx - 1] ? 'occupied' : 'empty']"
         :style="leftPos(idx - 1)"
-      >{{ rivers.left[idx - 1]?.definitionId ?? '' }}</div>
+      >{{ tileLabel(rivers.left[idx - 1]) }}</div>
     </div>
 
     <div class="center-info">
@@ -42,7 +42,7 @@
         :key="idx"
         :class="['slot', 'slot-landscape', rivers.right[idx - 1] ? 'occupied' : 'empty']"
         :style="rightPos(idx - 1)"
-      >{{ rivers.right[idx - 1]?.definitionId ?? '' }}</div>
+      >{{ tileLabel(rivers.right[idx - 1]) }}</div>
     </div>
 
     <div class="river river-bottom">
@@ -51,22 +51,28 @@
         :key="idx"
         :class="['slot', 'slot-portrait', rivers.bottom[idx - 1] ? 'occupied' : 'empty']"
         :style="bottomPos(idx - 1)"
-      >{{ rivers.bottom[idx - 1]?.definitionId ?? '' }}</div>
+      >{{ tileLabel(rivers.bottom[idx - 1]) }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Tile } from '@any-style-mahjong/game-core';
+import type { Tile, TileDefinition } from '@any-style-mahjong/game-core';
 
-defineProps<{
+const props = defineProps<{
   rivers: {
     top:    Tile[];
     left:   Tile[];
     right:  Tile[];
     bottom: Tile[];
   };
+  tileDefs: TileDefinition[];
 }>();
+
+function tileLabel(tile: Tile | undefined): string {
+  if (!tile) return '';
+  return props.tileDefs.find(d => d.id === tile.definitionId)?.label ?? tile.definitionId;
+}
 
 const PER_ROW = 6; // 1行あたりの牌数
 const ROWS    = 5; // 事前確保行数

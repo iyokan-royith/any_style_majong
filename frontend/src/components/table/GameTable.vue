@@ -9,7 +9,7 @@
     <!-- 上プレイヤー -->
     <div class="cell cell-top">
       <PlayerArea
-        :player="seats.top" position="top"
+        :player="seats.top" position="top" :tile-defs="state.rule.tiles"
         @discard="id => onDiscard(seats.top, id)"
       />
     </div>
@@ -17,7 +17,7 @@
     <!-- 左プレイヤー -->
     <div class="cell cell-left">
       <PlayerArea
-        :player="seats.left" position="left"
+        :player="seats.left" position="left" :tile-defs="state.rule.tiles"
         @discard="id => onDiscard(seats.left, id)"
       />
     </div>
@@ -25,7 +25,7 @@
     <!-- 中央: 牌山リング + 捨牌 -->
     <div class="cell cell-inner">
       <WallRing :wall="state.wall" :tile-defs="state.rule.tiles" @reveal="idx => emit('reveal', idx)">
-        <DiscardArea :rivers="rivers">
+        <DiscardArea :rivers="rivers" :tile-defs="state.rule.tiles">
           <!-- 卓中央の場の状態 -->
           <div class="table-center-status">
             <div
@@ -43,7 +43,7 @@
     <!-- 右プレイヤー -->
     <div class="cell cell-right">
       <PlayerArea
-        :player="seats.right" position="right"
+        :player="seats.right" position="right" :tile-defs="state.rule.tiles"
         @discard="id => onDiscard(seats.right, id)"
       />
     </div>
@@ -51,7 +51,7 @@
     <!-- 下プレイヤー（自分）: 常に手牌を表向きで表示 -->
     <div class="cell cell-bottom">
       <PlayerArea
-        :player="seats.bottom" position="bottom" :show-face-up="true"
+        :player="seats.bottom" position="bottom" :show-face-up="true" :tile-defs="state.rule.tiles"
         @discard="id => onDiscard(seats.bottom, id)"
       />
     </div>
