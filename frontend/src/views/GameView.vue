@@ -5,11 +5,22 @@
       <GameTable :state="state" @discard="onDiscard" />
 
       <div class="action-bar">
-        <button @click="onDraw">ツモ <kbd>Space</kbd></button>
-        <button @click="toggleMode">
-          モード: {{ discardMode ? '捨てる' : '開ける' }}
-        </button>
-        <button @click="onRevealHand">手牌を開ける</button>
+        <div class="action-row">
+          <button @click="onDraw">ツモ <kbd>Space</kbd></button>
+          <div class="action-gap" />
+          <button @click="toggleMode">
+            モード: {{ discardMode ? '捨てる' : '開ける' }}
+          </button>
+          <button @click="onRevealHand">手牌を開ける</button>
+        </div>
+        <div v-if="state.rule.declarations.length > 0" class="action-row">
+          <button
+            v-for="decl in state.rule.declarations"
+            :key="decl.id"
+            class="btn-declaration"
+            @click="onDeclare(decl.id)"
+          >{{ decl.label }}</button>
+        </div>
       </div>
     </div>
 
@@ -91,6 +102,10 @@ function onDiscard(playerId: string, instanceId: string) {
 function onRevealHand() {
   // TODO: 手牌公開アクション（skeleton）
 }
+
+function onDeclare(_declId: string) {
+  // TODO: 発声アクション（skeleton）
+}
 </script>
 
 <style scoped>
@@ -116,8 +131,19 @@ function onRevealHand() {
 
 .action-bar {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-gap {
+  width: 16px;
 }
 
 button {
@@ -132,6 +158,13 @@ button {
 }
 button:hover {
   background: #3a6a3a;
+}
+.btn-declaration {
+  background: #3a3a1a;
+  border-color: #7a7a3a;
+}
+.btn-declaration:hover {
+  background: #5a5a2a;
 }
 kbd {
   background: #1a2a1a;
