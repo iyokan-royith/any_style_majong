@@ -28,8 +28,12 @@
         <DiscardArea :rivers="rivers">
           <!-- 卓中央の場の状態 -->
           <div class="table-center-status">
-            <div v-for="(val, key) in state.tableState.global" :key="key" class="status-item">
-              {{ key }}: {{ val }}
+            <div
+              v-for="def in state.rule.tableStates.filter(d => d.kind === 'global')"
+              :key="def.id"
+              class="status-item"
+            >
+              {{ def.label }}: {{ state.tableState.global[def.id] ?? '—' }}
             </div>
           </div>
         </DiscardArea>

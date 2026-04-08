@@ -32,12 +32,14 @@
         <h3>卓の状態</h3>
         <div v-for="def in globalDefs" :key="def.id" class="state-row">
           <span class="state-label">{{ def.label }}</span>
-          <span class="state-value">{{ state.tableState.global[def.id] ?? '—' }}</span>
+          <!-- values あり: 値ボタンをクリックで次の値にトグル -->
           <button
             v-if="def.values && def.values.length"
-            class="btn-sm"
+            class="btn-sm btn-toggle"
             @click="cycleGlobal(def.id, def.values!)"
-          >切替</button>
+          >{{ state.tableState.global[def.id] ?? '—' }}</button>
+          <!-- values なし: テキスト表示のみ -->
+          <span v-else class="state-value">{{ state.tableState.global[def.id] ?? '—' }}</span>
         </div>
       </section>
 
@@ -99,12 +101,25 @@
         </div>
       </section>
 
+      <!-- ── ルール読み込み ── -->
+      <section class="info-section rule-section">
+        <h3>ルール</h3>
+        <label class="file-label">
+          YAMLを読み込む
+          <input type="file" accept=".yaml,.yml" @change="onYamlFile" />
+        </label>
+        <div v-if="loadedFileName" class="file-name">{{ loadedFileName }}</div>
+        <button v-if="loadedFileName" class="btn-sm btn-reset" @click="resetToStandard">標準ルールに戻す</button>
+        <div v-if="yamlError" class="yaml-error">{{ yamlError }}</div>
+      </section>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { load as yamlLoad } from 'js-yaml';
 import {
   createInitialState,
   initializeGame,
@@ -117,10 +132,35 @@ import {
   wallRemaining,
 } from '@any-style-mahjong/game-core';
 import type { GameState } from '@any-style-mahjong/game-core';
+import { parseRuleConfig } from '@any-style-mahjong/rule-loader';
 import GameTable from '../components/table/GameTable.vue';
+
+const yamlError = ref<string | null>(null);
+const loadedFileName = ref<string | null>(null);
 
 const rule = createStandardRule();
 const state = ref<GameState>(initializeGame(createInitialState(rule)));
+
+async function onYamlFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  yamlError.value = null;
+  try {
+    const data = yamlLoad(await file.text());
+    const newRule = parseRuleConfig(data);
+    loadedFileName.value = file.name;
+    state.value = initializeGame(createInitialState(newRule));
+  } catch (e) {
+    yamlError.value = e instanceof Error ? e.message : String(e);
+    (event.target as HTMLInputElement).value = '';
+  }
+}
+
+function resetToStandard() {
+  loadedFileName.value = null;
+  yamlError.value = null;
+  state.value = initializeGame(createInitialState(createStandardRule()));
+}
 
 const discardMode = ref(true);
 const remaining = computed(() => wallRemaining(state.value.wall));
@@ -281,6 +321,40 @@ kbd {
 .player-name  { color: #8cf; }
 .player-score { color: #aaa; font-size: 11px; }
 
+/* ── ルール読み込み ── */
+.rule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+.file-label {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #2a3a5a;
+  border: 1px solid #4a6a9a;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #adf;
+  cursor: pointer;
+  text-align: center;
+}
+.file-label:hover { background: #3a4a7a; }
+.file-label input[type="file"] { display: none; }
+.file-name { font-size: 10px; color: #8cf; word-break: break-all; }
+.btn-reset { background: #3a2a2a; border-color: #7a4a4a; }
+.btn-reset:hover { background: #5a3a3a; }
+.yaml-error {
+  font-size: 10px;
+  color: #f88;
+  background: #2a1a1a;
+  border: 1px solid #7a3a3a;
+  border-radius: 3px;
+  padding: 4px 6px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
 /* ── 状態行 ── */
 .state-row {
   display: flex;
@@ -332,4 +406,12 @@ kbd {
   cursor: default;
   pointer-events: none;
 }
+.btn-toggle {
+  min-width: 40px;
+  text-align: center;
+  background: #1e3a4a;
+  border-color: #3a6a8a;
+  color: #8cf;
+}
+.btn-toggle:hover { background: #2a5a6a; }
 </style>

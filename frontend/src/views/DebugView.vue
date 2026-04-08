@@ -8,6 +8,7 @@ import {
   discardTile,
   transferScore,
   revealWallTile,
+  setPerPlayerState,
   wallRemaining,
   createStandardRule,
   type GameState,
@@ -77,6 +78,17 @@ syncTransferForm();
 function doTransfer() {
   const { from, to, unit, amount } = transferForm.value;
   state.value = transferScore(state.value, from, to, unit, amount);
+}
+
+const perPlayerDefs = computed(() =>
+  state.value.rule.tableStates.filter(d => d.kind === 'per-player'),
+);
+
+function cyclePerPlayer(stateId: string, playerId: string, values: string[]) {
+  const current = state.value.tableState.perPlayer[stateId]?.[playerId];
+  const idx = current !== undefined ? values.indexOf(current) : -1;
+  const next = values[(idx + 1) % values.length];
+  state.value = setPerPlayerState(state.value, stateId, playerId, next);
 }
 
 function tileLabel(definitionId: string): string {
@@ -291,6 +303,23 @@ const wallColumns = computed(() => {
         <button @click="draw(player.id)" :disabled="wallRemaining(state.wall) === 0">ツモ</button>
       </h2>
 
+      <!-- per-player 状態 -->
+      <div v-if="perPlayerDefs.length > 0" class="perplayer-states">
+        <span
+          v-for="def in perPlayerDefs"
+          :key="def.id"
+          class="perplayer-state"
+        >
+          {{ def.label }}:
+          <button
+            v-if="def.values && def.values.length"
+            class="btn-toggle-small"
+            @click="cyclePerPlayer(def.id, player.id, def.values!)"
+          >{{ state.tableState.perPlayer[def.id]?.[player.id] ?? '—' }}</button>
+          <span v-else class="muted">{{ state.tableState.perPlayer[def.id]?.[player.id] ?? '—' }}</span>
+        </span>
+      </div>
+
       <div class="hand-label">手牌</div>
       <div class="hand">
         <span
@@ -462,4 +491,25 @@ select, input { background: #333; color: #eee; border: 1px solid #555; padding: 
 .error-box pre { margin: 4px 0 0; font-size: 0.8em; white-space: pre-wrap; word-break: break-all; }
 
 .tile.variant-red { background: #f88; color: #600; }
+
+.perplayer-states {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 0.82em;
+  color: #aaa;
+}
+.perplayer-state { display: flex; align-items: center; gap: 4px; }
+
+.btn-toggle-small {
+  background: #1e3a4a;
+  color: #8cf;
+  border: 1px solid #3a6a8a;
+  padding: 1px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.btn-toggle-small:hover { background: #2a5a6a; }
 </style>
