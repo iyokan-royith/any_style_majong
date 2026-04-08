@@ -32,14 +32,20 @@
         <h3>卓の状態</h3>
         <div v-for="def in globalDefs" :key="def.id" class="state-row">
           <span class="state-label">{{ def.label }}</span>
-          <!-- values あり: 値ボタンをクリックで次の値にトグル -->
+
+          <!-- list: クリックで次の値にサイクル -->
           <button
-            v-if="def.values && def.values.length"
+            v-if="def.globalType !== 'integer'"
             class="btn-sm btn-toggle"
-            @click="cycleGlobal(def.id, def.values!)"
+            @click="cycleGlobal(def.id, def.values ?? [])"
           >{{ state.tableState.global[def.id] ?? '—' }}</button>
-          <!-- values なし: テキスト表示のみ -->
-          <span v-else class="state-value">{{ state.tableState.global[def.id] ?? '—' }}</span>
+
+          <!-- integer: 値 + 増減ボタン -->
+          <template v-else>
+            <button class="btn-sm btn-step" @click="stepGlobal(def.id, -1)">－</button>
+            <span class="state-value int-value">{{ state.tableState.global[def.id] ?? '0' }}</span>
+            <button class="btn-sm btn-step" @click="stepGlobal(def.id, +1)">＋</button>
+          </template>
         </div>
       </section>
 
@@ -71,14 +77,20 @@
           <!-- per-player 状態 -->
           <div v-for="def in perPlayerDefs" :key="def.id" class="perplayer-row">
             <span class="state-label">{{ def.label }}</span>
-            <span class="state-value">
-              {{ state.tableState.perPlayer[def.id]?.[player.id] ?? '—' }}
-            </span>
+
+            <!-- list: クリックで次の値にサイクル -->
             <button
-              v-if="def.values && def.values.length"
-              class="btn-sm"
-              @click="cyclePerPlayer(def.id, player.id, def.values!)"
-            >切替</button>
+              v-if="def.perPlayerType !== 'toggle'"
+              class="btn-sm btn-toggle"
+              @click="cyclePerPlayer(def.id, player.id, def.values ?? [])"
+            >{{ state.tableState.perPlayer[def.id]?.[player.id] ?? '—' }}</button>
+
+            <!-- toggle: on/off ボタン -->
+            <button
+              v-else
+              :class="['btn-sm', 'btn-toggle-onoff', { active: state.tableState.perPlayer[def.id]?.[player.id] === 'on' }]"
+              @click="togglePerPlayer(def.id, player.id)"
+            >{{ state.tableState.perPlayer[def.id]?.[player.id] === 'on' ? 'ON' : 'OFF' }}</button>
           </div>
         </div>
       </section>
@@ -204,6 +216,11 @@ function cycleGlobal(stateId: string, values: string[]) {
   state.value = setGlobalState(state.value, stateId, nextValue(current, values));
 }
 
+function stepGlobal(stateId: string, delta: number) {
+  const current = parseInt(state.value.tableState.global[stateId] ?? '0', 10);
+  state.value = setGlobalState(state.value, stateId, String(current + delta));
+}
+
 function onSetExclusive(stateId: string, playerId: string) {
   state.value = setExclusiveState(state.value, stateId, playerId);
 }
@@ -211,6 +228,11 @@ function onSetExclusive(stateId: string, playerId: string) {
 function cyclePerPlayer(stateId: string, playerId: string, values: string[]) {
   const current = state.value.tableState.perPlayer[stateId]?.[playerId];
   state.value = setPerPlayerState(state.value, stateId, playerId, nextValue(current, values));
+}
+
+function togglePerPlayer(stateId: string, playerId: string) {
+  const current = state.value.tableState.perPlayer[stateId]?.[playerId];
+  state.value = setPerPlayerState(state.value, stateId, playerId, current === 'on' ? 'off' : 'on');
 }
 </script>
 
@@ -414,4 +436,32 @@ kbd {
   color: #8cf;
 }
 .btn-toggle:hover { background: #2a5a6a; }
+
+.btn-step {
+  min-width: 24px;
+  padding: 2px 4px;
+  background: #2a2a3a;
+  border-color: #5a5a8a;
+}
+.btn-step:hover { background: #3a3a5a; }
+
+.int-value {
+  min-width: 28px;
+  text-align: center;
+  display: inline-block;
+}
+
+.btn-toggle-onoff {
+  min-width: 40px;
+  text-align: center;
+  background: #2a2a2a;
+  border-color: #555;
+  color: #888;
+}
+.btn-toggle-onoff:hover { background: #3a3a3a; }
+.btn-toggle-onoff.active {
+  background: #1a3a1a;
+  border-color: #4a8a4a;
+  color: #8f8;
+}
 </style>

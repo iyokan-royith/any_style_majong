@@ -91,6 +91,11 @@ function cyclePerPlayer(stateId: string, playerId: string, values: string[]) {
   state.value = setPerPlayerState(state.value, stateId, playerId, next);
 }
 
+function togglePerPlayer(stateId: string, playerId: string) {
+  const current = state.value.tableState.perPlayer[stateId]?.[playerId];
+  state.value = setPerPlayerState(state.value, stateId, playerId, current === 'on' ? 'off' : 'on');
+}
+
 function tileLabel(definitionId: string): string {
   return state.value.rule.tiles.find(t => t.id === definitionId)?.label ?? definitionId;
 }
@@ -311,12 +316,18 @@ const wallColumns = computed(() => {
           class="perplayer-state"
         >
           {{ def.label }}:
+          <!-- list -->
           <button
-            v-if="def.values && def.values.length"
+            v-if="def.perPlayerType !== 'toggle'"
             class="btn-toggle-small"
-            @click="cyclePerPlayer(def.id, player.id, def.values!)"
+            @click="cyclePerPlayer(def.id, player.id, def.values ?? [])"
           >{{ state.tableState.perPlayer[def.id]?.[player.id] ?? '—' }}</button>
-          <span v-else class="muted">{{ state.tableState.perPlayer[def.id]?.[player.id] ?? '—' }}</span>
+          <!-- toggle -->
+          <button
+            v-else
+            :class="['btn-toggle-small', { 'btn-toggle-on': state.tableState.perPlayer[def.id]?.[player.id] === 'on' }]"
+            @click="togglePerPlayer(def.id, player.id)"
+          >{{ state.tableState.perPlayer[def.id]?.[player.id] === 'on' ? 'ON' : 'OFF' }}</button>
         </span>
       </div>
 
@@ -512,4 +523,9 @@ select, input { background: #333; color: #eee; border: 1px solid #555; padding: 
   font-size: 0.9em;
 }
 .btn-toggle-small:hover { background: #2a5a6a; }
+.btn-toggle-small.btn-toggle-on {
+  background: #1a3a1a;
+  border-color: #4a8a4a;
+  color: #8f8;
+}
 </style>
